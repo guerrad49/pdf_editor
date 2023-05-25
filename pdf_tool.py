@@ -1,24 +1,5 @@
 #!/usr/bin/env python3
 
-r"""
-USAGE
------
-The split flag does not require an argument.
-    ./pdf_editor.py <file> -s
-
-The merge flag can accept multiple arguments.
-    ./pdf_editor.py <file> -m <file2> <file3>
-
-When the reorder list is two-long, the pages are swapped.
-    ./pdf_editor.py <file> -o '2,6'
-When the reorder list is longer, the list must not skip numbers.
-    ./pdf_editor.py <file> -o '5,4,3'
-
-The remove flag accepts a comma-separated list of min length 1.
-    ./pdf_editor.py <file> -r '2,4,8,10'
-"""
-
-
 import os
 import sys
 import argparse
@@ -51,7 +32,7 @@ def split_pdf(base, parent_file):
     for i,page in enumerate(reader.pages):
         writer = PdfWriter()
         writer.add_page(page)
-        out_name = '{}_page{}.pdf'.format(parent_file[:-4], i+1)
+        out_name = '{}_page{:02d}.pdf'.format(parent_file[:-4], i+1)
         out_name = os.path.join(base, out_name)
         with open(out_name, 'wb') as f:
             writer.write(f)
