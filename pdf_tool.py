@@ -10,16 +10,24 @@ def parse_args():
     p = argparse.ArgumentParser()
 
     p.add_argument('file', help='Main PDF to work on')
-    p.add_argument('-s', '--split', action='store_true',
+
+    g = p.add_mutually_exclusive_group()
+    g.add_argument('-s', '--split', action='store_true',
                    help='Get each page as individual PDF.')
-    p.add_argument('-m', '--merge', nargs='*',
+    g.add_argument('-m', '--merge', nargs='*',
                    help='Merge additional PDFs to main PDF.')
-    p.add_argument('-o', '--reorder',
+    g.add_argument('-o', '--reorder',
                    help='Reorder pages according to comma-separated list.')
-    p.add_argument('-r', '--remove',
+    g.add_argument('-r', '--remove',
                    help='Remove page(s) according to comma-separated list.')
 
     args = p.parse_args()
+
+    # convert to 0-indexed list of integers
+    if args.reorder:
+        args.reorder = [int(x)-1 for x in args.reorder.split(',')]
+    if args.remove:
+        args.remove = [int(x)-1 for x in args.remove.split(',')]
     
     return args
 
@@ -79,28 +87,24 @@ def reorder(dirPath, fileName, order):
         The full directory path of the PDF file
     fileName: str
         The name of the PDF file
-    order: str
-        The comma-separated string with the new page order
+    order: list
+        The list of page numbers to reorder
     """
 
     reader = PdfReader(fileName)
-
-    order = [int(i)-1 for i in order.split(',')]
+    pdfLen = len(reader.pages)
     
-    if len(order) == 2:
-        order = list(range(len(reader.pages)))
-        order[order[0]] , order[order[1]] = \
-            order[order[1]] , order[order[0]]
-    elif (len(order) > 2) and (len(order) < len(reader.pages)):
-        order = list(range(min(order)))
-        order += order
-        order += list(range(max(order)+1,len(reader.pages)))
-    elif len(order) == len(reader.pages):
-        order = order
+    # start with pages to remain in place
+    reordered = [p for p in range(pdfLen) if p not in order]
+
+    # insert other pages with specified order
+    indices = sorted(order)
+    for i, p in zip(indices, order):
+        reordered.insert(i, p)
 
     writer = PdfWriter()
-    for i in order:
-        writer.add_page(reader.pages[i])
+    for p in reordered:
+        writer.add_page(reader.pages[p])
 
     outName = '{}_reordered.pdf'.format(fileName[:-4])
     outPath = os.path.join(dirPath, outName)
@@ -108,7 +112,7 @@ def reorder(dirPath, fileName, order):
         writer.write(f)
 
 
-def remove(dirPath, fileName, pageNums):
+def remove(dirPath, fileName, pgsToRemove):
     """
     Remove given files from PDF.
 
@@ -118,18 +122,18 @@ def remove(dirPath, fileName, pageNums):
         The full directory path of the PDF file
     fileName: str
         The name of the PDF file
-    pageNums: str
-        The comma-separated string with page numbers to remove
+    pgsToRemove: list
+        The list of pages to remove
     """
 
     reader = PdfReader(fileName)
-
-    pgsToRemove = [int(i)-1 for i in pageNums.split(',')]
+    pdfLen = len(reader.pages)
+    
+    pgsToKeep = [p for p in range(pdfLen) if p not in pgsToRemove]
 
     writer = PdfWriter()
-    for i, _ in enumerate(reader.pages):
-        if i not in pgsToRemove:
-            writer.add_page(reader.pages[i])
+    for p in pgsToKeep:
+        writer.add_page(reader.pages[p])
 
     outName = '{}_fixed.pdf'.format(fileName[:-4])
     outPath = os.path.join(dirPath, outName)
