@@ -6,32 +6,6 @@ import argparse
 from PyPDF2 import PdfReader, PdfMerger, PdfWriter
 
 
-def parse_args():
-    p = argparse.ArgumentParser()
-
-    p.add_argument('file', help='Main PDF to work on')
-
-    g = p.add_mutually_exclusive_group()
-    g.add_argument('-s', '--split', action='store_true',
-                   help='Get each page as individual PDF.')
-    g.add_argument('-m', '--merge', nargs='*',
-                   help='Merge additional PDFs to main PDF.')
-    g.add_argument('-o', '--reorder',
-                   help='Reorder pages according to comma-separated list.')
-    g.add_argument('-r', '--remove',
-                   help='Remove page(s) according to comma-separated list.')
-
-    args = p.parse_args()
-
-    # convert to 0-indexed list of integers
-    if args.reorder:
-        args.reorder = [int(x)-1 for x in args.reorder.split(',')]
-    if args.remove:
-        args.remove = [int(x)-1 for x in args.remove.split(',')]
-    
-    return args
-
-
 def split(dirPath, fileName):
     """
     Split and save all PDF pages into separate PDF.
@@ -128,7 +102,7 @@ def remove(dirPath, fileName, pgsToRemove):
 
     reader = PdfReader(fileName)
     pdfLen = len(reader.pages)
-    
+
     pgsToKeep = [p for p in range(pdfLen) if p not in pgsToRemove]
 
     writer = PdfWriter()
@@ -150,7 +124,33 @@ def check_encryption(fileList):
             msg = 'ERROR - File {} is encrypted.\n'.format(f)
             sys.exit(msg)
 
+
+def parse_args():
+    p = argparse.ArgumentParser()
+
+    p.add_argument('file', help='Main PDF to work on')
+
+    g = p.add_mutually_exclusive_group()
+    g.add_argument('-s', '--split', action='store_true',
+                   help='Get each page as individual PDF.')
+    g.add_argument('-m', '--merge', nargs='*',
+                   help='Merge additional PDFs to main PDF.')
+    g.add_argument('-o', '--reorder',
+                   help='Reorder pages according to comma-separated list.')
+    g.add_argument('-r', '--remove',
+                   help='Remove page(s) according to comma-separated list.')
+
+    args = p.parse_args()
+
+    # convert to 0-indexed list of integers
+    if args.reorder:
+        args.reorder = [int(x)-1 for x in args.reorder.split(',')]
+    if args.remove:
+        args.remove = [int(x)-1 for x in args.remove.split(',')]
     
+    return args
+
+
 #=============================================================
 
 if __name__ == '__main__':
